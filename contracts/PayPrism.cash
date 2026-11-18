@@ -1,0 +1,68 @@
+pragma cashscript ^0.14.0;
+
+// PayPrism — one address in, many addresses out.
+//
+// Whatever arrives at this contract can only ever leave in one way: split
+// between a fixed list of recipients, in fixed proportions. There is no owner
+// key and no signature check, so ANYONE may trigger the payout — the covenant
+// makes sure the money can only go where the prism says it goes.
+//
+// The recipient list is a single byte string walked with a loop (CashVM loops,
+// May 2026 upgrade), so the same contract serves 2 recipients or 20.
+//
+//   recipients      N entries of 22 bytes each:
+//                   20-byte public key hash ++ 2-byte share in basis points
+//                   (little-endian script number, all shares add up to 10000)
+//   tokenCategory   category of the one fungible CashToken this prism also
+//                   splits (e.g. PUSD). Tokens of any other category cannot be
+//                   spent from the prism, so they can never be burned by it.
+//   maxFeePerInput  upper bound, in satoshis, of the miner fee that may be
+//                   taken from the pot per prism UTXO spent
+contract PayPrism(bytes recipients, bytes32 tokenCategory, int maxFeePerInput) {
+    function payout() {
+        int count = recipients.length / 22;
+
+        // 1. Add up everything this payout spends. Every input has to be a
+        //    UTXO of this very prism, so nothing foreign can be mixed in.
+        bytes prismBytecode = tx.inputs[this.activeInputIndex].lockingBytecode;
+        int totalValue = 0;
+        int totalTokens = 0;
+        int i = 0;
+        do {
+            require(tx.inputs[i].lockingBytecode == prismBytecode, "foreign input");
+            totalValue = totalValue + tx.inputs[i].value;
+            if (tx.inputs[i].tokenCategory != 0x) {
+                require(tx.inputs[i].tokenCategory == tokenCategory, "unsupported token");
+                totalTokens = totalTokens + tx.inputs[i].tokenAmount;
+            }
+            i = i + 1;
+        } while (i < tx.inputs.length);
+
+        int distributable = totalValue - maxFeePerInput * tx.inputs.length;
+        require(distributable > 0, "pot is smaller than the fee");
+
+        // 2. Walk the recipient list: output k must pay recipient k at least
+        //    their share of the BCH and of the tokens.
+        int k = 0;
+        do {
+            bytes entry = recipients.split(k * 22)[1].split(22)[0];
+            bytes20 pkh = unsafe_bytes20(entry.split(20)[0]);
+            int share = int(entry.split(20)[1]);
+
+            require(tx.outputs[k].lockingBytecode == new LockingBytecodeP2PKH(pkh), "wrong recipient");
+            require(tx.outputs[k].value >= distributable * share / 10000, "BCH share too small");
+
+            int tokenShare = totalTokens * share / 10000;
+            if (tokenShare > 0) {
+                require(tx.outputs[k].tokenCategory == tokenCategory, "wrong token");
+                require(tx.outputs[k].tokenAmount >= tokenShare, "token share too small");
+            } else {
+                require(tx.outputs[k].tokenCategory == 0x, "unexpected token");
+            }
+            k = k + 1;
+        } while (k < count);
+
+        // 3. No further outputs: nothing can be siphoned off to anyone else.
+        require(tx.outputs.length == count, "one output per recipient, nothing else");
+    }
+}

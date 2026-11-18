@@ -1,0 +1,23 @@
+{
+  "name": "payprism",
+  "version": "1.0.0",
+  "description": "One Bitcoin Cash address that splits every payment between a fixed list of people",
+  "scripts": {
+    "test": "node --test test/prism.test.js",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "compile": "cashc contracts/PayPrism.cash -o src/artifacts/PayPrism.json"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@wizardconnect/core": "^0.2.10",
+    "@wizardconnect/dapp": "^0.2.7",
+    "cashc": "^0.14.0",
+    "cashscript": "^0.14.0",
+    "qrcode": "^1.5.4",
+    "vite": "^8.3.8"
+  },
+  "type": "module",
+  "private": true
+}

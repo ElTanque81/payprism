@@ -1,0 +1,40 @@
+{
+  "contractName": "PayPrism",
+  "constructorInputs": [
+    { "name": "recipients", "type": "bytes" },
+    { "name": "tokenCategory", "type": "bytes32" },
+    { "name": "maxFeePerInput", "type": "int" }
+  ],
+  "abi": [
+    { "name": "payout", "inputs": [] }
+  ],
+  "bytecode": "OP_SIZE 16 OP_DIV OP_INPUTINDEX OP_UTXOBYTECODE OP_0 OP_0 OP_0 OP_BEGIN OP_DUP OP_UTXOBYTECODE OP_4 OP_PICK OP_EQUALVERIFY OP_2 OP_PICK OP_OVER OP_UTXOVALUE OP_ADD OP_2SWAP OP_NIP OP_ROT OP_DUP OP_UTXOTOKENCATEGORY OP_0 OP_EQUAL OP_NOTIF OP_DUP OP_UTXOTOKENCATEGORY OP_7 OP_PICK OP_EQUALVERIFY OP_2DUP OP_UTXOTOKENAMOUNT OP_ADD OP_ROT OP_DROP OP_SWAP OP_ENDIF OP_1ADD OP_DUP OP_TXINPUTCOUNT OP_GREATERTHANOREQUAL OP_UNTIL OP_ROT OP_7 OP_ROLL OP_TXINPUTCOUNT OP_MUL OP_SUB OP_DUP OP_0 OP_GREATERTHAN OP_VERIFY OP_0 OP_BEGIN OP_6 OP_PICK OP_OVER 16 OP_MUL OP_SPLIT OP_NIP 16 OP_SPLIT OP_DROP OP_DUP 14 OP_SPLIT OP_DROP OP_OVER 14 OP_SPLIT OP_NIP OP_BIN2NUM OP_3 OP_PICK OP_OUTPUTBYTECODE 76a914 OP_3 OP_PICK OP_CAT 88ac OP_CAT OP_EQUALVERIFY OP_3 OP_PICK OP_OUTPUTVALUE OP_5 OP_PICK OP_2 OP_PICK OP_MUL 1027 OP_DIV OP_GREATERTHANOREQUAL OP_VERIFY OP_6 OP_PICK OP_OVER OP_MUL 1027 OP_DIV OP_DUP OP_0 OP_GREATERTHAN OP_IF OP_4 OP_PICK OP_OUTPUTTOKENCATEGORY OP_12 OP_PICK OP_EQUALVERIFY OP_4 OP_PICK OP_OUTPUTTOKENAMOUNT OP_OVER OP_GREATERTHANOREQUAL OP_VERIFY OP_ELSE OP_4 OP_PICK OP_OUTPUTTOKENCATEGORY OP_0 OP_EQUALVERIFY OP_ENDIF OP_4 OP_ROLL OP_1ADD OP_SWAP OP_TOALTSTACK OP_SWAP OP_2SWAP OP_ROT OP_FROMALTSTACK OP_2DROP OP_2DROP OP_DUP OP_6 OP_PICK OP_GREATERTHANOREQUAL OP_UNTIL OP_TXOUTPUTCOUNT OP_6 OP_ROLL OP_NUMEQUALVERIFY OP_2DROP OP_2DROP OP_2DROP OP_DROP OP_1",
+  "source": "pragma cashscript ^0.14.0;\n\n// PayPrism — one address in, many addresses out.\n//\n// Whatever arrives at this contract can only ever leave in one way: split\n// between a fixed list of recipients, in fixed proportions. There is no owner\n// key and no signature check, so ANYONE may trigger the payout — the covenant\n// makes sure the money can only go where the prism says it goes.\n//\n// The recipient list is a single byte string walked with a loop (CashVM loops,\n// May 2026 upgrade), so the same contract serves 2 recipients or 20.\n//\n//   recipients      N entries of 22 bytes each:\n//                   20-byte public key hash ++ 2-byte share in basis points\n//                   (little-endian script number, all shares add up to 10000)\n//   tokenCategory   category of the one fungible CashToken this prism also\n//                   splits (e.g. PUSD). Tokens of any other category cannot be\n//                   spent from the prism, so they can never be burned by it.\n//   maxFeePerInput  upper bound, in satoshis, of the miner fee that may be\n//                   taken from the pot per prism UTXO spent\ncontract PayPrism(bytes recipients, bytes32 tokenCategory, int maxFeePerInput) {\n    function payout() {\n        int count = recipients.length / 22;\n\n        // 1. Add up everything this payout spends. Every input has to be a\n        //    UTXO of this very prism, so nothing foreign can be mixed in.\n        bytes prismBytecode = tx.inputs[this.activeInputIndex].lockingBytecode;\n        int totalValue = 0;\n        int totalTokens = 0;\n        int i = 0;\n        do {\n            require(tx.inputs[i].lockingBytecode == prismBytecode, \"foreign input\");\n            totalValue = totalValue + tx.inputs[i].value;\n            if (tx.inputs[i].tokenCategory != 0x) {\n                require(tx.inputs[i].tokenCategory == tokenCategory, \"unsupported token\");\n                totalTokens = totalTokens + tx.inputs[i].tokenAmount;\n            }\n            i = i + 1;\n        } while (i < tx.inputs.length);\n\n        int distributable = totalValue - maxFeePerInput * tx.inputs.length;\n        require(distributable > 0, \"pot is smaller than the fee\");\n\n        // 2. Walk the recipient list: output k must pay recipient k at least\n        //    their share of the BCH and of the tokens.\n        int k = 0;\n        do {\n            bytes entry = recipients.split(k * 22)[1].split(22)[0];\n            bytes20 pkh = unsafe_bytes20(entry.split(20)[0]);\n            int share = int(entry.split(20)[1]);\n\n            require(tx.outputs[k].lockingBytecode == new LockingBytecodeP2PKH(pkh), \"wrong recipient\");\n            require(tx.outputs[k].value >= distributable * share / 10000, \"BCH share too small\");\n\n            int tokenShare = totalTokens * share / 10000;\n            if (tokenShare > 0) {\n                require(tx.outputs[k].tokenCategory == tokenCategory, \"wrong token\");\n                require(tx.outputs[k].tokenAmount >= tokenShare, \"token share too small\");\n            } else {\n                require(tx.outputs[k].tokenCategory == 0x, \"unexpected token\");\n            }\n            k = k + 1;\n        } while (k < count);\n\n        // 3. No further outputs: nothing can be siphoned off to anyone else.\n        require(tx.outputs.length == count, \"one output per recipient, nothing else\");\n    }\n}\n",
+  "fingerprint": "5d1c33daca4e10e9adcd5e8db8603f190686e0648e348afa492e35a4a11de53d",
+  "debug": {
+    "bytecode": "82011696c0c70000006576c7547988527978c69372777b76ce00876476ce5779886ed0937b757c688b76c3a2667b577ac395947600a06900655679780116957f7701167f757601147f757801147f77815379cd0376a91453797e0288ac7e885379cc557952799502102796a26956797895021027967600a0635479d15c79885479d378a269675479d1008868547a8b7c6b7c727b6c6d6d765679a266c4567a9d6d6d6d7551",
+    "sourceMap": "23:20:23:37:1;:40::42:0;:20:::1;27:40:27:61:0;:30::78:1;28:25:28:26:0;29:26:29:27;30:16:30:17;31:8:39:39;32:30:32:31;:20::48:1;:52::65:0;;:12::84:1;33:25:33:35:0;;:48::49;:38::56:1;:25;:12::57;;;34:26:34:27:0;:16::42:1;:46::48:0;:16:::1;::37:13:0;35:34:35:35;:24::50:1;:54::67:0;;:16::90:1;36:30:36:55:0;:44::68:1;:30;:16::69;;;34:50:37:13;38:12:38:22;39:17:39:18:0;:21::37;31:8::39:1;;41:28:41:38:0;:41::55;;:58::74;:41:::1;:28;42:16:42:29:0;:32::33;:16:::1;:8::66;46:16:46:17:0;47:8:63:28;48:26:48:36;;:43::44;:47::49;:43:::1;:26::50;:::53;:60::62:0;:26::63:1;:::66;49:41:49:46:0;:53::55;:41::56:1;:::59;50:28:50:33:0;:40::42;:28::43:1;:::46;:24::47;52:31:52:32:0;;:20::49:1;:53::82:0;:78::81;;:53::82:1;;;:12::103;53:31:53:32:0;;:20::39:1;:43::56:0;;:59::64;;:43:::1;:67::72:0;:43:::1;:20;:12::97;55:29:55:40:0;;:43::48;:29:::1;:51::56:0;:29:::1;56:16:56:26:0;:29::30;:16:::1;:32:59:13:0;57:35:57:36;;:24::51:1;:55::68:0;;:16::85:1;58:35:58:36:0;;:24::49:1;:53::63:0;:24:::1;:16::90;59:19:61:13:0;60:35:60:36;;:24::51:1;:55::57:0;:16::79:1;59:19:61:13;62:12:62:22;;;;;;;;;47:11:63:9;;63:17::18:0;:21::26;;47:8::28:1;;66:16:66:33:0;:37::42;;:8::86:1;22:22:67:5;;;;",
+    "logs": [],
+    "requires": [
+      { "ip": 16, "line": 32, "message": "foreign input" },
+      { "ip": 34, "line": 35, "message": "unsupported token" },
+      { "ip": 56, "line": 42, "message": "pot is smaller than the fee" },
+      { "ip": 87, "line": 52, "message": "wrong recipient" },
+      { "ip": 99, "line": 53, "message": "BCH share too small" },
+      { "ip": 115, "line": 57, "message": "wrong token" },
+      { "ip": 121, "line": 58, "message": "token share too small" },
+      { "ip": 127, "line": 60, "message": "unexpected token" },
+      { "ip": 148, "line": 66, "message": "one output per recipient, nothing else" }
+    ],
+    "sourceTags": "135:136:sc"
+  },
+  "compiler": {
+    "name": "cashc",
+    "version": "0.14.0",
+    "options": {
+      "enforceFunctionParameterTypes": true,
+      "enforceLocktimeGuard": true
+    }
+  },
+  "updatedAt": "2026-11-14T10:46:13.904Z"
+}
