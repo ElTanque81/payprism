@@ -12,6 +12,8 @@ Built for [BCH BLAZE 2026](https://dorahacks.io/hackathon/bchblaze2026) (Mainnet
 - It splits **BCH and PUSD** (ParyonUSD) in the same payout. BLAZE prizes are paid in PUSD, so a team can hand the organisers one PayPrism address and let the chain do the split.
 - The whole prism lives in the link. No database, no sign-up. If this website disappeared, the funds would still be claimable by anyone who has the link.
 
+Demo video (2 min): https://youtu.be/7e2a-L7ZM14
+
 ## Try it
 
 | Mode | How | Needs |
