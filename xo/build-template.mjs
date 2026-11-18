@@ -161,5 +161,7 @@ export const template = {
 if (import.meta.url === `file://${process.argv[1]}`) {
   const json = JSON.stringify(template, null, 2);
   writeFileSync(new URL('./payprism.xo-template.json', import.meta.url), `${json}\n`);
+  // The web app serves the same file, so the prism page can offer it for download.
+  writeFileSync(new URL('../public/xo/payprism.xo-template.json', import.meta.url), `${json}\n`);
   console.log(`wrote payprism.xo-template.json (${json.length} bytes, contract ${contractHex.length / 2} bytes)`);
 }

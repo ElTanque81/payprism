@@ -3,9 +3,10 @@ import { ElectrumNetworkProvider, MockNetworkProvider, randomUtxo } from 'cashsc
 import { hash160, generatePrivateKey, secp256k1 } from '@bitauth/libauth';
 import {
   createPrism, planPayout, buildPayout, prismInputBytes, addressToPkh, pkhToAddress,
-  encodePrismLink, decodePrismLink, validateRecipients, maxFeePerInput,
+  encodePrismLink, decodePrismLink, validateRecipients, maxFeePerInput, encodeRecipients,
   PUSD_CATEGORY, PUSD_DECIMALS, MAX_RECIPIENTS,
 } from './prism.js';
+import { binToHex, hexToBin } from '@bitauth/libauth';
 import { Wallet } from './wallet.js';
 import { t, getLang, setLang, fmtNumber } from './i18n.js';
 import contractSource from '../contracts/PayPrism.cash?raw';
@@ -364,8 +365,50 @@ function prismView() {
         <div id="pot">${potHtml()}</div>
       </section>
     </div>
+    ${xoSection()}
     ${howSection()}
   </main>`;
+}
+
+// XO: the same prism as an XO template, so any XO wallet can pay in or trigger the payout.
+const XO_TEMPLATE_URL = 'xo/payprism.xo-template.json';
+
+function xoVariables() {
+  const { recipients } = live.prism;
+  const vars = {
+    recipients: binToHex(encodeRecipients(recipients)),
+    tokenCategory: binToHex(hexToBin(PUSD_CATEGORY).reverse()),
+    maxFeePerInput: Number(maxFeePerInput(recipients.length)),
+  };
+  if (recipients.length <= 3) {
+    recipients.forEach((r, i) => {
+      vars[`recipient${i + 1}Hash`] = binToHex(r.pkh);
+      vars[`share${i + 1}`] = r.bps;
+    });
+  }
+  return vars;
+}
+
+function xoSection() {
+  const n = live.prism.recipients.length;
+  const vars = xoVariables();
+  const payoutNote = n <= 3 ? t('xoPayout', { action: `payout${n}` }) : t('xoPayoutMany');
+  return `<section class="xo">
+    <h2>${t('xoTitle')}</h2>
+    <p>${t('xoLead')}</p>
+    <ul>
+      <li>${t('xoFund')}</li>
+      <li>${payoutNote}</li>
+    </ul>
+    <div class="row-actions">
+      <a class="btn" href="${XO_TEMPLATE_URL}" download="payprism.xo-template.json">${t('xoDownload')}</a>
+      <button class="btn ghost" data-act="copy-xo">${t('xoCopy')}</button>
+      <a class="btn ghost" href="https://blaze.xo.cash" target="_blank" rel="noopener">${t('xoOpen')}</a>
+    </div>
+    <details><summary>${t('xoShow')}</summary>
+      <table class="xo-vars">${Object.entries(vars).map(([k, v]) => `<tr><th>${k}</th><td class="mono">${esc(v)}</td></tr>`).join('')}</table>
+    </details>
+  </section>`;
 }
 
 // ---------- wallet dialog ----------
@@ -511,6 +554,7 @@ app.addEventListener('click', async (e) => {
     case 'copy-address': copyText(live.showToken ? live.prism.tokenAddress : live.prism.address, target); break;
     case 'copy-link': copyText(location.href, target); break;
     case 'copy-vote': copyText(VOTE_ADDRESS, target); break;
+    case 'copy-xo': copyText(JSON.stringify(xoVariables(), null, 2), target); break;
     case 'payout': await doPayout(); break;
     case 'demo-bch':
       provider().addUtxo(live.prism.address, randomUtxo({ satoshis: 1_000_000n, token: undefined }));

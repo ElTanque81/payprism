@@ -159,3 +159,10 @@ pre { background: var(--ink); color: #e6ebf7; padding: 16px; border-radius: var(
   .blaze .full { display: none; }
   .blaze .short { display: inline; }
 }
+
+/* XO section */
+.xo { margin-top: 40px; background: var(--surface); border-radius: var(--radius); padding: 24px; }
+.xo ul { padding-left: 20px; max-width: 70ch; }
+.xo-vars { border-collapse: collapse; margin-top: 12px; width: 100%; table-layout: fixed; }
+.xo-vars th { text-align: left; font-weight: 600; padding: 6px 12px 6px 0; width: 9.5em; vertical-align: top; font-size: 0.875rem; }
+.xo-vars td { padding: 6px 0; overflow-wrap: anywhere; }
