@@ -1,0 +1,389 @@
+{
+  "$schema": "https://libauth.org/schemas/wallet-template-v0.schema.json",
+  "name": "PayPrism",
+  "description": "One Bitcoin Cash address that splits every payment between a fixed list of people. Keyless covenant.",
+  "icon": "prism",
+  "version": "1",
+  "supported": [
+    "BCH_2026_05"
+  ],
+  "resources": [
+    {
+      "name": "PayPrism",
+      "description": "The PayPrism web app and its documentation.",
+      "url": "https://payprism.netlify.app"
+    },
+    {
+      "name": "Source code",
+      "description": "CashScript covenant, web app and this template.",
+      "url": "https://github.com/ElTanque81/payprism"
+    }
+  ],
+  "roles": {
+    "payer": {
+      "name": "Payer",
+      "description": "Pays into a prism.",
+      "icon": "payer"
+    },
+    "trigger": {
+      "name": "Trigger",
+      "description": "Anyone who starts a payout. Needs no key and no funds.",
+      "icon": "prism"
+    }
+  },
+  "start": [
+    {
+      "action": "fund"
+    },
+    {
+      "action": "payout2"
+    },
+    {
+      "action": "payout3"
+    }
+  ],
+  "actions": {
+    "fund": {
+      "name": "Pay into a prism",
+      "description": "Sends satoshis to a prism address. They can only leave split between its recipients.",
+      "icon": "payer",
+      "roles": {
+        "payer": {
+          "requirements": {
+            "variables": [
+              "recipients",
+              "tokenCategory",
+              "maxFeePerInput",
+              "fundSatoshis"
+            ]
+          }
+        }
+      },
+      "requirements": {
+        "participants": [
+          {
+            "role": "payer",
+            "slots": {
+              "min": 1,
+              "max": 1
+            }
+          }
+        ]
+      },
+      "transaction": "fundTransaction"
+    },
+    "payout2": {
+      "name": "Pay out 2 recipients",
+      "description": "Splits one prism coin between 2 recipients. Anyone can trigger it; no key is involved.",
+      "icon": "prism",
+      "roles": {
+        "trigger": {
+          "requirements": {
+            "variables": [
+              "recipients",
+              "tokenCategory",
+              "maxFeePerInput",
+              "prismSatoshis",
+              "recipient1Hash",
+              "share1",
+              "recipient2Hash",
+              "share2"
+            ]
+          }
+        }
+      },
+      "requirements": {
+        "participants": [
+          {
+            "role": "trigger",
+            "slots": {
+              "min": 1,
+              "max": 1
+            }
+          }
+        ]
+      },
+      "transaction": "payout2Transaction"
+    },
+    "payout3": {
+      "name": "Pay out 3 recipients",
+      "description": "Splits one prism coin between 3 recipients. Anyone can trigger it; no key is involved.",
+      "icon": "prism",
+      "roles": {
+        "trigger": {
+          "requirements": {
+            "variables": [
+              "recipients",
+              "tokenCategory",
+              "maxFeePerInput",
+              "prismSatoshis",
+              "recipient1Hash",
+              "share1",
+              "recipient2Hash",
+              "share2",
+              "recipient3Hash",
+              "share3"
+            ]
+          }
+        }
+      },
+      "requirements": {
+        "participants": [
+          {
+            "role": "trigger",
+            "slots": {
+              "min": 1,
+              "max": 1
+            }
+          }
+        ]
+      },
+      "transaction": "payout3Transaction"
+    }
+  },
+  "transactions": {
+    "fundTransaction": {
+      "name": "Paid into prism",
+      "description": "$(<fundSatoshis>) satoshis paid into a prism.",
+      "icon": "payer",
+      "inputs": [],
+      "outputs": [
+        {
+          "output": "prismOutput"
+        }
+      ],
+      "composable": true
+    },
+    "payout2Transaction": {
+      "name": "Prism paid out",
+      "description": "$(<prismSatoshis>) satoshis split between 2 recipients.",
+      "icon": "prism",
+      "inputs": [
+        {
+          "input": "prismInput",
+          "inputIndex": 0
+        }
+      ],
+      "outputs": [
+        {
+          "output": "recipient1Output",
+          "outputIndex": 0
+        },
+        {
+          "output": "recipient2Output",
+          "outputIndex": 1
+        }
+      ]
+    },
+    "payout3Transaction": {
+      "name": "Prism paid out",
+      "description": "$(<prismSatoshis>) satoshis split between 3 recipients.",
+      "icon": "prism",
+      "inputs": [
+        {
+          "input": "prismInput",
+          "inputIndex": 0
+        }
+      ],
+      "outputs": [
+        {
+          "output": "recipient1Output",
+          "outputIndex": 0
+        },
+        {
+          "output": "recipient2Output",
+          "outputIndex": 1
+        },
+        {
+          "output": "recipient3Output",
+          "outputIndex": 2
+        }
+      ]
+    }
+  },
+  "inputs": {
+    "prismInput": {
+      "name": "Prism coin",
+      "description": "The prism coin being paid out.",
+      "icon": "prism",
+      "valueSatoshis": "$(<prismSatoshis>)",
+      "token": null,
+      "unlockingScript": "prismUnlockingBytecode"
+    }
+  },
+  "outputs": {
+    "prismOutput": {
+      "name": "Prism coin",
+      "description": "Satoshis locked in the prism until the next payout.",
+      "icon": "prism",
+      "lockingScript": "prism",
+      "valueSatoshis": "$(<fundSatoshis>)",
+      "token": null
+    },
+    "recipient1Output": {
+      "name": "Share of recipient 1",
+      "description": "$(<share1>) basis points of the prism coin, after the fee allowance.",
+      "icon": "recipient",
+      "lockingScript": "recipient1Wallet",
+      "valueSatoshis": "$(<prismSatoshis> <maxFeePerInput> OP_SUB <share1> OP_MUL <10000> OP_DIV)",
+      "token": null
+    },
+    "recipient2Output": {
+      "name": "Share of recipient 2",
+      "description": "$(<share2>) basis points of the prism coin, after the fee allowance.",
+      "icon": "recipient",
+      "lockingScript": "recipient2Wallet",
+      "valueSatoshis": "$(<prismSatoshis> <maxFeePerInput> OP_SUB <share2> OP_MUL <10000> OP_DIV)",
+      "token": null
+    },
+    "recipient3Output": {
+      "name": "Share of recipient 3",
+      "description": "$(<share3>) basis points of the prism coin, after the fee allowance.",
+      "icon": "recipient",
+      "lockingScript": "recipient3Wallet",
+      "valueSatoshis": "$(<prismSatoshis> <maxFeePerInput> OP_SUB <share3> OP_MUL <10000> OP_DIV)",
+      "token": null
+    }
+  },
+  "lockingScripts": {
+    "prism": {
+      "name": "PayPrism covenant",
+      "description": "Pays out only to the recipient list, in its shares, with a capped fee and no other outputs.",
+      "icon": "prism",
+      "lockingType": "p2s",
+      "lockingBytecode": "prismLockingBytecode",
+      "state": {
+        "variables": [
+          "recipients",
+          "tokenCategory",
+          "maxFeePerInput"
+        ]
+      },
+      "selectable": false,
+      "balance": {
+        "satoshis": "<bigint: 0n>",
+        "fungibleTokens": "<bigint: 0n>",
+        "nonfungibleTokens": 0
+      }
+    },
+    "recipient1Wallet": {
+      "name": "Recipient 1",
+      "description": "The wallet of recipient 1.",
+      "icon": "recipient",
+      "lockingType": "p2s",
+      "lockingBytecode": "recipient1LockingBytecode",
+      "selectable": false,
+      "balance": {
+        "satoshis": "<bigint: 0n>",
+        "fungibleTokens": "<bigint: 0n>",
+        "nonfungibleTokens": 0
+      }
+    },
+    "recipient2Wallet": {
+      "name": "Recipient 2",
+      "description": "The wallet of recipient 2.",
+      "icon": "recipient",
+      "lockingType": "p2s",
+      "lockingBytecode": "recipient2LockingBytecode",
+      "selectable": false,
+      "balance": {
+        "satoshis": "<bigint: 0n>",
+        "fungibleTokens": "<bigint: 0n>",
+        "nonfungibleTokens": 0
+      }
+    },
+    "recipient3Wallet": {
+      "name": "Recipient 3",
+      "description": "The wallet of recipient 3.",
+      "icon": "recipient",
+      "lockingType": "p2s",
+      "lockingBytecode": "recipient3LockingBytecode",
+      "selectable": false,
+      "balance": {
+        "satoshis": "<bigint: 0n>",
+        "fungibleTokens": "<bigint: 0n>",
+        "nonfungibleTokens": 0
+      }
+    }
+  },
+  "scripts": {
+    "prismRedeemBytecode": "<maxFeePerInput> <tokenCategory> <recipients> 0x82011696c0c70000006576c7547988527978c69372777b76ce00876476ce5779886ed0937b757c688b76c3a2667b577ac395947600a06900655679780116957f7701167f757601147f757801147f77815379cd0376a91453797e0288ac7e885379cc557952799502102796a26956797895021027967600a0635479d15c79885479d378a269675479d1008868547a8b7c6b7c727b6c6d6d765679a266c4567a9d6d6d6d7551",
+    "prismLockingBytecode": "OP_HASH256 <$(<prismRedeemBytecode> OP_HASH256)> OP_EQUAL",
+    "prismUnlockingBytecode": "<prismRedeemBytecode>",
+    "recipient1LockingBytecode": "OP_DUP OP_HASH160 <recipient1Hash> OP_EQUALVERIFY OP_CHECKSIG",
+    "recipient2LockingBytecode": "OP_DUP OP_HASH160 <recipient2Hash> OP_EQUALVERIFY OP_CHECKSIG",
+    "recipient3LockingBytecode": "OP_DUP OP_HASH160 <recipient3Hash> OP_EQUALVERIFY OP_CHECKSIG"
+  },
+  "constants": {},
+  "variables": {
+    "recipients": {
+      "name": "Recipient list",
+      "description": "Encoded list: per recipient a 20-byte public key hash and a 2-byte little-endian share in basis points. The p= value of a PayPrism link, decoded.",
+      "type": "bytes"
+    },
+    "tokenCategory": {
+      "name": "Token category",
+      "description": "The one CashToken category the prism also splits, in VM byte order. PUSD by default.",
+      "type": "bytes"
+    },
+    "maxFeePerInput": {
+      "name": "Fee allowance per coin",
+      "description": "Satoshis the payout may leave as miner fee per prism coin: 350 + 100 x recipients.",
+      "type": "integer"
+    },
+    "fundSatoshis": {
+      "name": "Amount",
+      "description": "Satoshis to pay into the prism.",
+      "type": "satoshis"
+    },
+    "prismSatoshis": {
+      "name": "Prism coin value",
+      "description": "Satoshis held by the prism coin being paid out.",
+      "type": "satoshis"
+    },
+    "recipient1Hash": {
+      "name": "Recipient 1",
+      "description": "Public key hash (20 bytes) of recipient 1, in the order of the recipient list.",
+      "type": "bytes"
+    },
+    "share1": {
+      "name": "Share 1",
+      "description": "Share of recipient 1 in basis points (5000 = 50 %).",
+      "type": "integer"
+    },
+    "recipient2Hash": {
+      "name": "Recipient 2",
+      "description": "Public key hash (20 bytes) of recipient 2, in the order of the recipient list.",
+      "type": "bytes"
+    },
+    "share2": {
+      "name": "Share 2",
+      "description": "Share of recipient 2 in basis points (5000 = 50 %).",
+      "type": "integer"
+    },
+    "recipient3Hash": {
+      "name": "Recipient 3",
+      "description": "Public key hash (20 bytes) of recipient 3, in the order of the recipient list.",
+      "type": "bytes"
+    },
+    "share3": {
+      "name": "Share 3",
+      "description": "Share of recipient 3 in basis points (5000 = 50 %).",
+      "type": "integer"
+    }
+  },
+  "icons": [
+    {
+      "name": "prism",
+      "hash": "0000000000000000000000"
+    },
+    {
+      "name": "payer",
+      "hash": "0000000000000000000000"
+    },
+    {
+      "name": "recipient",
+      "hash": "0000000000000000000000"
+    }
+  ]
+}
