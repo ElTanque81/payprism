@@ -67,6 +67,23 @@ function splitBar(rows, { labels = true } = {}) {
 
 // ---------- header ----------
 
+// BCH BLAZE 2026 banner: presentation, code and the community-vote address.
+const VOTE_ADDRESS = 'bitcoincash:zrmdr0k5628npf06wwk3tkkc5z8zdj2tgcnt40w7sh';
+const DECK_URL = 'deck/payprism-deck.pdf';
+const REPO_URL = 'https://github.com/ElTanque81/payprism';
+
+function blazeBanner() {
+  return `<aside class="blaze" aria-label="BCH BLAZE 2026">
+    <span><strong>${t('blazeEntry')}</strong></span>
+    <span><a href="${DECK_URL}" target="_blank" rel="noopener">${t('blazeDeck')}</a>
+      <a href="${REPO_URL}" target="_blank" rel="noopener">${t('blazeCode')}</a>
+      <a href="https://youtu.be/7e2a-L7ZM14" target="_blank" rel="noopener">${t('blazeVideo')}</a></span>
+    <span class="vote">${t('blazeVote')}
+      <code title="${VOTE_ADDRESS}"><span class="full">${VOTE_ADDRESS}</span><span class="short">zrmdr0…40w7sh</span></code>
+      <button class="link" data-act="copy-vote">${t('copy')}</button></span>
+  </aside>`;
+}
+
 function header() {
   const lang = getLang();
   let walletUi = DEMO ? '' : `<button class="btn ghost" data-act="connect">${t('connect')}</button>`;
@@ -377,7 +394,7 @@ function render() {
   let view;
   if (ui.linkError) view = `<main class="create"><h1>PayPrism</h1><p class="error" role="alert">${t('errLink')}</p><a class="btn" href="${location.pathname}${location.search}">${t('newPrism')}</a></main>`;
   else view = live.prism ? prismView() : createView();
-  app.innerHTML = `${header()}${view}${footer()}${qrDialog()}`;
+  app.innerHTML = `${blazeBanner()}${header()}${view}${footer()}${qrDialog()}`;
 
   const qr = document.getElementById('qr');
   if (qr && live.prism) {
@@ -493,6 +510,7 @@ app.addEventListener('click', async (e) => {
     case 'addr-token': live.showToken = true; render(); break;
     case 'copy-address': copyText(live.showToken ? live.prism.tokenAddress : live.prism.address, target); break;
     case 'copy-link': copyText(location.href, target); break;
+    case 'copy-vote': copyText(VOTE_ADDRESS, target); break;
     case 'payout': await doPayout(); break;
     case 'demo-bch':
       provider().addUtxo(live.prism.address, randomUtxo({ satoshis: 1_000_000n, token: undefined }));

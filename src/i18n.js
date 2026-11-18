@@ -2,6 +2,11 @@
 const strings = {
   en: {
     tagline: 'One address in. Everyone paid out.',
+    blazeEntry: 'Entry for BCH BLAZE 2026',
+    blazeDeck: 'Presentation',
+    blazeCode: 'Source code',
+    blazeVideo: 'Demo video',
+    blazeVote: 'Community vote (EMBER2026):',
     lead: 'Set who gets what share. PayPrism turns that list into a Bitcoin Cash address. Whatever is paid to it can only leave one way: split between those people, in those proportions. No owner, no account, no one who could run off with the money.',
     newPrism: 'New prism',
     titleLabel: 'What is it for?',
@@ -87,6 +92,11 @@ const strings = {
   },
   de: {
     tagline: 'Eine Adresse rein. Alle ausgezahlt.',
+    blazeEntry: 'Beitrag zu BCH BLAZE 2026',
+    blazeDeck: 'Präsentation',
+    blazeCode: 'Quellcode',
+    blazeVideo: 'Demo-Video',
+    blazeVote: 'Community-Abstimmung (EMBER2026):',
     lead: 'Lege fest, wer welchen Anteil bekommt. PayPrism macht aus dieser Liste eine Bitcoin-Cash-Adresse. Was dort eingeht, kann nur auf einem Weg wieder raus: aufgeteilt auf genau diese Personen, in genau diesen Anteilen. Kein Besitzer, kein Konto, niemand, der mit dem Geld verschwinden könnte.',
     newPrism: 'Neues Prisma',
     titleLabel: 'Wofür ist es?',

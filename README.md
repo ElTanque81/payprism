@@ -14,6 +14,10 @@ Built for [BCH BLAZE 2026](https://dorahacks.io/hackathon/bchblaze2026) (Mainnet
 
 Demo video (2 min): https://youtu.be/7e2a-L7ZM14
 
+Presentation (BCH BLAZE "Widget Factory" template structure): [public/deck/payprism-deck.pdf](public/deck/payprism-deck.pdf) · live at https://payprism.netlify.app/deck/payprism-deck.pdf
+
+Community vote (EMBER2026): `bitcoincash:zrmdr0k5628npf06wwk3tkkc5z8zdj2tgcnt40w7sh`
+
 ## Try it
 
 | Mode | How | Needs |

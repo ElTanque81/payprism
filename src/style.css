@@ -143,3 +143,19 @@ pre { background: var(--ink); color: #e6ebf7; padding: 16px; border-radius: var(
 .foot a { margin-left: 10px; }
 .demo-note { margin-top: 16px; }
 .demo-actions { border-top: 1px solid var(--line); padding-top: 16px; }
+
+/* BCH BLAZE 2026 banner */
+.blaze {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px;
+  margin: 0 -20px; padding: 10px 20px; background: var(--ink); color: #e6ebf7; font-size: 0.875rem;
+}
+.blaze a, .blaze .link { color: #fff; margin-right: 12px; }
+.blaze .link { margin-left: 6px; }
+.blaze code { font-family: var(--mono); font-size: 0.8125rem; background: #1c2750; padding: 2px 6px; border-radius: 6px; overflow-wrap: anywhere; }
+.blaze .vote { margin-left: auto; }
+.blaze .short { display: none; }
+@media (max-width: 720px) {
+  .blaze .vote { margin-left: 0; }
+  .blaze .full { display: none; }
+  .blaze .short { display: inline; }
+}
