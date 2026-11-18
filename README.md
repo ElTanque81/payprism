@@ -56,6 +56,10 @@ Consequences:
 - One payout sweeps at most 40 incoming payments; the rest go out with the next press.
 - Anyone can trigger a payout at any time, so many tiny payments mean many small fees. That is a cost, not a risk to the split.
 
+## XO
+
+PayPrism is also an XO template (General Protocols): any XO wallet can pay into a prism or trigger its payout, and the template locks funds to the same address as the web app. Fund and payout ran on chipnet through the XO debug tool. Details, transactions and tests: [xo/README.md](xo/README.md).
+
 ## Tests
 
 ```
